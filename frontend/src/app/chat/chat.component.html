@@ -1,0 +1,309 @@
+<div class="chat-container">
+  <!-- User Sidebar -->
+  <div class="user-sidebar" [class.collapsed]="!showUserList">
+    <div class="sidebar-header">
+      <h3>Friends</h3>
+      <div class="header-actions">
+        <button class="manage-btn" (click)="toggleManageMode()" title="Manage chat list">
+          <span>⚙️</span>
+        </button>
+        <button class="toggle-btn" (click)="toggleUserList()">
+          <span class="toggle-icon">☰</span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="user-search">
+      <input 
+        type="text" 
+        placeholder="Search friends..." 
+        class="search-input"
+        [value]="searchTerm"
+        (input)="onSearchInput($event)"
+        autocomplete="off"
+      >
+    </div>
+    
+    <!-- User List -->
+    <div class="user-list" *ngIf="!isLoading; else loadingUsers">
+      <!-- Manage Mode Header -->
+      <div *ngIf="isManageMode" class="manage-mode-header">
+        <div class="manage-search">
+          <input
+            type="text"
+            placeholder="Search users to remove..."
+            class="manage-search-input"
+            [(ngModel)]="manageSearchTerm"
+          >
+        </div>
+        <div class="manage-actions">
+          <button class="btn btn-secondary" (click)="selectAllUsers()">
+            Select All
+          </button>
+          <button class="btn btn-secondary" (click)="deselectAllUsers()">
+            Deselect All
+          </button>
+          <button class="btn btn-danger" (click)="removeSelectedUsers()" [disabled]="selectedUsersForRemoval.size === 0">
+            Remove Selected ({{ selectedUsersForRemoval.size }})
+          </button>
+          <button class="btn btn-primary" (click)="exitManageMode()">
+            Done
+          </button>
+        </div>
+      </div>
+      
+      <ng-container *ngIf="filteredUsers && filteredUsers.length > 0">
+        <div 
+          *ngFor="let user of filteredUsers; trackBy: trackByUserId" 
+          class="user-item" 
+          [class.selected]="selectedUser && (selectedUser.id === user.id || selectedUser._id === user._id)"
+          [class.manage-mode]="isManageMode"
+          (click)="!isManageMode && selectUser(user)"
+
+        >
+        <!-- Checkbox for manage mode -->
+        <div *ngIf="isManageMode" class="user-checkbox">
+          <input 
+            type="checkbox" 
+            [checked]="isUserSelectedForRemoval(user)"
+            (change)="toggleUserSelection(user)"
+            (click)="$event.stopPropagation()"
+          >
+        </div>
+        
+        <div class="user-avatar">
+          <img 
+            [src]="getPhotoUrl(user.photo)" 
+            [alt]="user.name" 
+            (error)="onImageError($event)"
+            class="avatar-img"
+          >
+          <div class="online-indicator" [class.online]="user.isOnline"></div>
+        </div>
+        
+        <div class="user-info">
+          <div class="user-name">
+            {{ user.name }}
+            <span *ngIf="hasNewConversation(user.id || user._id || '')" class="new-message-indicator">🔔</span>
+          </div>
+          <div class="user-status" [class.online]="user.isOnline">
+            <span *ngIf="user.isOnline">Online</span>
+            <span *ngIf="!user.isOnline">
+              {{ user.lastSeen ? 'Last seen ' + formatLastSeen(user.lastSeen) : 'Offline' }}
+            </span>
+            <span class="connection-count" *ngIf="user.connectionCount !== undefined">
+              • {{ user.connectionCount }} connections
+            </span>
+            <span class="connection-status" *ngIf="user.connectionStatus === 'pending'">
+              • Pending
+            </span>
+          </div>
+        </div>
+      </div>
+      </ng-container>
+      
+      <div *ngIf="filteredUsers.length === 0 && !isLoading" class="no-users">
+        <p *ngIf="searchTerm.trim()">No friends found for "{{ searchTerm }}"</p>
+        <p *ngIf="!searchTerm.trim()">No friends available for chat</p>
+        <p *ngIf="!searchTerm.trim()" class="no-connections-hint">Connect with other users on the Skills page to start chatting</p>
+      </div>
+    </div>
+    
+    <ng-template #loadingUsers>
+      <div class="loading-users">
+        <p>Loading users...</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area" [class.full-width]="!showUserList">
+    <!-- No User Selected -->
+    <div *ngIf="!selectedUser" class="no-chat-selected">
+      <div class="welcome-message">
+        <div class="welcome-icon">💬</div>
+        <h2>Welcome to SkillSwap Chat</h2>
+        <p>Select a friend from the list to start chatting</p>
+        <p *ngIf="users.length === 0" class="no-connections-hint">You need to connect with other users first to start chatting</p>
+      </div>
+    </div>
+
+    <!-- Chat with Selected User -->
+    <div *ngIf="selectedUser" class="chat-interface">
+      <!-- WhatsApp-style Chat Header -->
+      <div class="chat-header">
+        <div class="header-left">
+          <div class="user-info" *ngIf="selectedUser">
+            <img [src]="getPhotoUrl(selectedUser.photo)" [alt]="selectedUser.name" class="chat-avatar">
+            <div class="user-details">
+              <h3 class="user-name">{{ selectedUser.name }}</h3>
+              <p class="user-status" [class.online]="selectedUser.isOnline">
+                <ng-container *ngIf="typingUsers.has(selectedUser.name); else notTyping">
+                  typing...
+                </ng-container>
+                <ng-template #notTyping>
+                  {{ selectedUser.isOnline ? 'Online' : (selectedUser.lastSeen ? 'Last seen ' + formatLastSeen(selectedUser.lastSeen) : 'Offline') }}
+                </ng-template>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="toggle-btn" (click)="toggleUserList()">
+            <i class="fas fa-bars">☰</i>
+          </button>
+          <button class="clear-btn" (click)="showClearMessagesDialog()" title="Clear messages">
+            <i class="fas fa-trash">🗑️</i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Container -->
+      <div class="messages-container" #messagesContainer>
+        <!-- Loading Messages Indicator -->
+        <div *ngIf="isLoading" class="loading-messages">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading messages...</p>
+          </div>
+        </div>
+
+        <!-- No messages: Show new chat message -->
+  <div *ngIf="!isLoading && getCurrentMessages().length === 0 && selectedUser && isNewConversation()" class="no-messages-panel" style="background: #fffbe6; border: 2px solid #ffd700; padding: 24px; color: #333; z-index: 1000;">
+          <div class="no-messages-icon">📝</div>
+          <div class="no-messages-text">
+            <h4>No previous conversation</h4>
+            <p>Start a new chat with <strong>{{ selectedUser.name }}</strong>!</p>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <ng-container *ngIf="getCurrentMessages() && getCurrentMessages().length > 0">
+          <div 
+            *ngFor="let message of getCurrentMessages(); let i = index; trackBy: trackByMessageId" 
+            class="message-wrapper"
+            [class.sent]="isMessageFromCurrentUser(message)"
+            [class.received]="!isMessageFromCurrentUser(message)"
+          >
+          <div class="message">
+            <div class="message-content">
+              <!-- Message Text -->
+              <div class="message-text" *ngIf="message.content">{{ message.content }}</div>
+              <!-- ...existing code... -->
+              <!-- Message Attachments -->
+              <div class="message-attachments" *ngIf="message.attachments && message.attachments.length > 0">
+                <div *ngFor="let attachment of message.attachments" class="attachment">
+                  <button class="attachment-download-btn" (click)="downloadAttachment(attachment)">
+                    <span class="paperclip-icon">📎</span>
+                    <span class="attachment-name">{{ attachment.originalName || attachment.name || 'Attachment' }}</span>
+                    <span class="download-icon">⬇️</span>
+                  </button>
+                </div>
+              </div>
+              <!-- Message Metadata -->
+              <div class="message-meta">
+                <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+                <span class="message-status" *ngIf="isMessageFromCurrentUser(message)">
+                  <span *ngIf="message.isPending" class="pending-status">⏳</span>
+                  <span *ngIf="!message.isPending && message.isRead" class="read-status">✓✓</span>
+                  <span *ngIf="!message.isPending && !message.isRead" class="sent-status">✓</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        </ng-container>
+
+        <!-- Typing Indicator -->
+        <div *ngIf="typingUsers.size > 0" class="typing-indicator">
+          <div class="typing-bubble">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <span class="typing-text">{{ getTypingUsersText() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message Input Area -->
+      <div class="message-input-area">
+        <div class="input-container">
+          <!-- Attachment Button -->
+          <button class="attachment-btn" (click)="openFileInput()" [disabled]="!selectedUser">
+            <span class="attachment-icon">📎</span>
+          </button>
+          
+          <!-- Hidden File Input -->
+          <input 
+            #fileInput
+            type="file" 
+            multiple
+            (change)="onFileSelected($event)"
+            style="display: none;"
+            accept="image/*,.pdf,.doc,.docx,.txt"
+          >
+          
+          <!-- Message Input -->
+          <div class="text-input-wrapper">
+            <input 
+              type="text" 
+              [(ngModel)]="newMessage" 
+              placeholder="Type a message..."
+              (keydown)="onEnterKeyPress($event)"
+              (input)="onTyping()"
+              class="message-text-input"
+              [disabled]="!selectedUser"
+            >
+          </div>
+          
+          <!-- Send Button -->
+          <button 
+            (click)="sendMessage()" 
+            class="send-button"
+            [disabled]="(!newMessage.trim() && selectedFiles.length === 0) || !selectedUser || isSendingMessage"
+            [title]="'Send button disabled: newMessage=' + newMessage + ', selectedFiles=' + selectedFiles.length + ', selectedUser=' + (selectedUser ? 'yes' : 'no') + ', isSending=' + isSendingMessage"
+          >
+            <span class="send-icon">📤</span>
+          </button>
+        </div>
+        
+        <!-- Selected Files Preview -->
+        <div class="selected-files" *ngIf="selectedFiles && selectedFiles.length > 0">
+          <div *ngFor="let file of selectedFiles; let i = index" class="selected-file">
+            <span class="file-name">{{ file.name }}</span>
+            <button class="remove-file-btn" (click)="removeSelectedFile(i)">×</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Error/Success Message -->
+<div *ngIf="errorMessage" class="error-message" [class.success]="errorMessage.includes('successfully')">
+  {{ errorMessage }}
+</div>
+
+<!-- Clear Messages Confirmation Dialog -->
+<div *ngIf="showClearDialog" class="dialog-overlay" (click)="cancelClearMessages()">
+  <div class="dialog-content" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>Clear Chat History</h3>
+    </div>
+    <div class="dialog-body" *ngIf="selectedUser">
+      <p>Are you sure you want to clear all messages with <strong>{{ selectedUser.name }}</strong>?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" (click)="cancelClearMessages()">Cancel</button>
+      <button class="btn btn-danger" (click)="confirmClearMessages()" [disabled]="isClearingMessages">
+        <span *ngIf="!isClearingMessages">Clear All Messages</span>
+        <span *ngIf="isClearingMessages">Clearing...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+

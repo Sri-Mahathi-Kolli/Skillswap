@@ -1,0 +1,329 @@
+<style>
+.notifications-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 2rem;
+}
+.notifications-container h2 {
+  margin-bottom: 1.5rem;
+  color: #3f51b5;
+  text-align: center;
+}
+.notifications-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 768px) {
+  .notifications-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.notification-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-height: 300px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+.notifications-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+.notifications-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.notifications-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+.notifications-scroll::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+.notifications-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+.bookings-section .section-title {
+  color: #2e7d32;
+}
+.connections-section .section-title {
+  color: #1976d2;
+}
+.notification-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease;
+}
+.notification-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.booking-notification {
+  border-left: 4px solid #4caf50;
+  background: linear-gradient(135deg, #e8f5e8, #f3e5f5);
+}
+.connection-notification {
+  border-left: 4px solid #1976d2;
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+}
+.sender-name {
+  font-weight: 600;
+  color: #1976d2;
+  margin-right: 1rem;
+}
+.notification-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.notification-actions button {
+  padding: 0.4rem 1.2rem;
+  border-radius: 6px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-accept {
+  background: linear-gradient(90deg, #1976d2, #42a5f5);
+  color: #fff;
+}
+.btn-reject {
+  background: #e53935;
+  color: #fff;
+}
+.btn-mark-read {
+  background: #4caf50;
+  color: #fff;
+}
+.btn-done {
+  background: #6c757d;
+  color: #fff;
+  cursor: not-allowed;
+}
+.btn-mark-read:disabled {
+  opacity: 0.7;
+}
+.btn-schedule {
+  background: linear-gradient(90deg, #ff9800, #ffc107);
+  color: #fff;
+}
+.btn-schedule:hover {
+  background: linear-gradient(90deg, #f57c00, #ff9800);
+}
+.schedule-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+  color: #856404;
+}
+.schedule-warning strong {
+  color: #d63031;
+}
+.btn-refresh {
+  padding: 0.5rem 1rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.empty-state {
+  text-align: center;
+  color: #666;
+  padding: 2rem;
+  font-style: italic;
+}
+.count-badge {
+  background: #ff5722;
+  color: white;
+  border-radius: 50%;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+.clickable-name {
+  color: #1976d2;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: bold;
+}
+.clickable-name:hover {
+  color: #0d47a1;
+  text-decoration: none;
+}
+.btn-refresh {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+}
+.btn-refresh:hover {
+  background: #45a049;
+}
+</style>
+
+<div class="notifications-container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h2>📬 Notifications Center</h2>
+    <button 
+      (click)="refreshUser()" 
+      [disabled]="isRefreshing"
+      class="btn-refresh">
+      {{ isRefreshing ? '🔄 Refreshing...' : '🔄 Refresh' }}
+    </button>
+  </div>
+
+  <div class="notifications-grid">
+    <!-- Left Side: Booking Notifications -->
+    <div class="notification-section bookings-section">
+      <div class="section-header">
+        <h3 class="section-title">💳 Session Bookings</h3>
+        <span class="count-badge" *ngIf="bookingNotifications.length > 0">
+          {{ bookingNotifications.length }}
+        </span>
+      </div>
+      
+      <div class="notifications-scroll">
+        <div *ngIf="bookingNotifications.length === 0" class="empty-state">
+          📭 No new session bookings
+        </div>
+        
+        <div *ngFor="let notification of bookingNotifications" 
+             class="notification-item booking-notification">
+          <div class="notification-content">
+            <ng-container *ngIf="notification.type === 'payment_received' || notification.type === 'new_session_booking'; else otherNotification">
+              <div style="font-weight: 600; color: #4caf50; margin-bottom: 0.5rem;">
+                <ng-container *ngIf="notification.type === 'payment_received'">
+                  💰 Payment received from
+                  <span class="clickable-name"
+                        (click)="viewUserProfile(notification.data?.studentId || '68b5cb3eb66a586e49feffc4', notification.data?.studentName)"
+                        title="Click to interact with {{ notification.data?.studentName || 'this user' }}">
+                    {{ notification.data?.studentName || 'Unknown Student' }}
+                  </span>
+                  <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.3rem;">
+                    📧 {{ notification.data?.studentEmail || 'Email not available' }}
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="notification.type === 'new_session_booking'">
+                  🎉 <span 
+                        class="clickable-name" 
+                        (click)="viewUserProfile(notification.data?.studentId || '68b5cb3eb66a586e49feffc4', notification.data?.studentName)"
+                        title="Click to interact with {{ notification.data?.studentName || 'this user' }}">
+                        {{ notification.data?.studentName || 'Unknown Student' }}
+                      </span> booked a session with you
+                </ng-container>
+              </div>
+              <div *ngIf="notification.type === 'new_session_booking'" style="color: #666; font-size: 0.9rem; margin-bottom: 0.3rem;">
+                📧 {{ notification.data?.studentEmail || (notification.data?.studentName === 'Sri' ? 'sri@gmail.com' : 'Email not available') }}
+              </div>
+              <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.3rem;">
+                💰 Payment received: ${{ notification.data?.amount || 0 }} {{ notification.data?.currency || '' }}
+              </div>
+              <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.3rem;">
+                ⏱ Duration: {{ notification.data?.duration || 'N/A' }} minutes
+              </div>
+              <div style="color: #666; font-size: 0.8rem;">
+                🕒 {{ notification.createdAt | date:'medium' }}
+              </div>
+            </ng-container>
+            <ng-template #otherNotification>
+              <!-- ...other notification types... -->
+            </ng-template>
+          </div>
+          <!-- Warning Message and Schedule Button for both payment_received and new_session_booking -->
+          <div *ngIf="notification.type === 'payment_received' || notification.type === 'new_session_booking'" class="schedule-warning">
+            📋 <strong>Action Required:</strong> Please schedule the session, add it to your calendar, and confirm completion before marking this notification as read.
+          </div>
+          <div class="notification-actions">
+            <button *ngIf="notification.type === 'payment_received' || notification.type === 'new_session_booking'" (click)="scheduleSession(notification)" class="btn-schedule">
+              📅 Schedule
+            </button>
+            <button 
+              (click)="markNotificationAsRead(notification._id)" 
+              class="btn-mark-read"
+              [class.btn-done]="notification.isRead"
+              [disabled]="notification.isRead">
+              {{ notification.isRead ? '✅ Done' : '✅ Mark as Read' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Side: Connection Requests -->
+    <div class="notification-section connections-section">
+      <div class="section-header">
+        <h3 class="section-title">🤝 Connection Requests</h3>
+        <span class="count-badge" *ngIf="pendingRequests.length > 0">
+          {{ pendingRequests.length }}
+        </span>
+      </div>
+      
+      <div class="notifications-scroll">
+        <div *ngIf="pendingRequests.length === 0" class="empty-state">
+          📭 No pending connection requests
+        </div>
+        
+        <div *ngFor="let req of pendingRequests" 
+             class="notification-item connection-notification">
+          <div class="notification-content">
+            <div style="font-weight: 600; color: #1976d2; margin-bottom: 0.5rem;">
+              👤 <span 
+                    class="clickable-name" 
+                    (click)="viewUserProfile(req.from, senders[req.from]?.name)"
+                    title="Click to interact with {{ senders[req.from]?.name || 'this user' }}">
+                    {{ senders[req.from]?.name || req.from }}
+                  </span>
+            </div>
+            <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">
+              💬 {{ req.message || 'Wants to connect with you' }}
+            </div>
+            <div style="color: #666; font-size: 0.8rem;">
+              🕒 {{ req.createdAt | date:'medium' }}
+            </div>
+          </div>
+          <div class="notification-actions">
+            <button (click)="acceptRequest(req._id)" class="btn-accept">
+              ✅ Accept
+            </button>
+            <button (click)="rejectRequest(req._id)" class="btn-reject">
+              ❌ Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

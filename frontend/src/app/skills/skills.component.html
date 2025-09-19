@@ -1,0 +1,156 @@
+<div class="page-header">
+  <h1>Discover Skills</h1>
+  <p>Find experts and learn from the best in your field</p>
+</div>
+
+<div class="skills-container fade-in">
+  <!-- Search and Filters -->
+  <div class="card mb-4">
+    <div class="skills-search">
+      <div class="search-input">
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          (input)="onSearch()"
+          placeholder="Search skills or experts..."
+          class="search-field">
+      </div>
+      <div class="filter-group">
+        <select [(ngModel)]="selectedCategory" (change)="onCategoryChange()" class="filter-select">
+          <option value="">All Categories</option>
+          <ng-container *ngIf="categories && categories.length > 0">
+            <option *ngFor="let category of categories" [value]="category.id">
+              {{ category.name }} ({{ category.count }})
+            </option>
+          </ng-container>
+        </select>
+      </div>
+      <div class="filter-group">
+        <select [(ngModel)]="selectedLevel" (change)="onLevelChange()" class="filter-select">
+          <option value="">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="expert">Expert</option>
+        </select>
+      </div>
+      <button class="btn btn-outline" (click)="clearFilters()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Popular Skills -->
+  <div class="card mb-4">
+    <h3 class="mb-3">Popular Skills</h3>
+    <div class="popular-skills" *ngIf="popularSkills && popularSkills.length > 0">
+      <span 
+        class="skill-tag clickable" 
+        *ngFor="let skill of popularSkills"
+        (click)="searchSkill(skill)">
+        {{ skill }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Skills Grid: Two cards per row -->
+  <div class="skills-results">
+    <div class="skills-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;" *ngIf="filteredExperts && filteredExperts.length > 0">
+      <div class="expert-card card" *ngFor="let expert of filteredExperts" 
+           style="padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: white; height: fit-content;">
+        
+        <!-- Profile Header -->
+        <div class="profile-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #eee;">
+          <img [src]="expert.avatar" [alt]="expert.name" class="avatar clickable-avatar"
+               (error)="onImgError($event)"
+               (click)="openImagePreview(expert.avatar, expert.name, $event)"
+               title="Click to view full image" 
+               style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+          <div class="expert-info" style="flex: 1;">
+            <h4 style="margin: 0 0 0.3rem 0; font-size: 1.2rem; font-weight: 600;">{{ expert.name }}</h4>
+            <p class="expert-title" style="margin: 0 0 0.3rem 0; color: #666; font-size: 1rem;">{{ expert.title }}</p>
+            <div class="expert-stats" style="color: #888; font-size: 0.9rem;">
+              <span style="margin-right: 1rem;">{{ expert.connections }} connections</span>
+              <span>{{ expert.completed }} completed</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Cost Information Section -->
+        <div class="cost-section" style="text-align: center; margin-bottom: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+          <div *ngIf="expert.customPricing && expert.customPricing.length > 0" class="payment-info">
+            <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">💰</div>
+            <div *ngFor="let entry of expert.customPricing" style="font-size: 1.1rem; margin-bottom: 0.2rem;">
+              <span style="font-weight: 600; color: #28a745;">{{ entry.duration }} min:</span>
+              <span style="font-weight: 700; color: #333;">{{ entry.amount > 0 ? ('$' + entry.amount) : 'Free' }}</span>
+            </div>
+          </div>
+          <div *ngIf="!expert.customPricing || expert.customPricing.length === 0" class="free-mentoring">
+            <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">✨</div>
+            <div style="font-size: 1.4rem; font-weight: 700; color: #6f42c1; margin-bottom: 0.2rem;">
+              Free
+            </div>
+            <div style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Mentoring</div>
+            <div style="background: #f3e5f5; padding: 0.5rem; border-radius: 6px; color: #6f42c1; font-size: 0.85rem; font-weight: 600;">
+              No payment required
+            </div>
+          </div>
+        </div>
+        
+        <!-- Skills Section -->
+        <div class="skills-section" style="margin-bottom: 1.5rem;">
+          <ng-container *ngIf="expertSkills[expert.id] && expertSkills[expert.id].length > 0">
+            <div style="margin-bottom: 1rem;" *ngIf="expertSkills[expert.id] && expertSkills[expert.id].length > 0">
+              <div class="skill-name" *ngFor="let skill of expertSkills[expert.id] | slice:0:2" 
+                   style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.4rem; color: #333;">
+                {{ skill.name }}
+              </div>
+            </div>
+            <div class="skill-tags" style="display: flex; gap: 0.6rem; flex-wrap: wrap;" *ngIf="getExpertTags(expert.id) && getExpertTags(expert.id).length > 0">
+              <span class="tag" *ngFor="let tag of getExpertTags(expert.id)" 
+                    style="background: #e9ecef; color: #495057; padding: 0.3rem 0.8rem; border-radius: 15px; font-size: 0.85rem; font-weight: 500;">
+                {{ tag }}
+              </span>
+            </div>
+          </ng-container>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons" style="display: flex; flex-direction: column; gap: 0.8rem;">
+          <!-- Primary Action Row -->
+          <div style="display: flex; gap: 0.8rem;">
+            <button [class]="getExpertConnectionButtonClass(expert)" 
+                    (click)="connectWithExpertDirect(expert)" 
+                    [disabled]="isExpertConnectionDisabled(expert)" 
+                    style="flex: 1; padding: 0.6rem; font-size: 0.95rem; font-weight: 600; border-radius: 6px;">
+              {{ getExpertConnectionButtonText(expert) }}
+            </button>
+            <button class="btn btn-outline" 
+                    (click)="messageExpertDirect(expert)" 
+                    style="flex: 1; padding: 0.6rem; font-size: 0.95rem; border-radius: 6px;">
+              Message
+            </button>
+          </div>
+          
+          <!-- Payment Button Row (always show for nonzero paid options) -->
+          <button *ngIf="hasPaidOption(expert)"
+                  [class]="getPayButtonClass(expert)"
+                  (click)="isPaymentEnabled(expert) ? bookSession(expert) : connectWithExpertDirect(expert)"
+                  [disabled]="!isPaymentEnabled(expert)"
+                  [title]="getPayButtonTooltip(expert)"
+                  style="width: 100%; padding: 0.8rem; font-size: 1rem; font-weight: 600; border-radius: 6px;">
+            💳 {{ getPayButtonText(expert) }}
+          </button>
+          
+          <!-- View Profile Button -->
+          <button class="btn btn-secondary" 
+                  (click)="viewProfile(expert)" 
+                  style="width: 100%; padding: 0.6rem; font-size: 0.95rem; border-radius: 6px;">
+            View Profile
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="no-results" *ngIf="!filteredExperts || filteredExperts.length === 0">
+      <h3>No profiles found</h3>
+      <p>Try adjusting your search criteria or browse popular skills above.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,863 @@
+<!-- Outlook-Style Schedule Page -->
+<div class="schedule-outlook-container">
+
+
+  <!-- Error and Loading Messages -->
+  <div *ngIf="errorMessage" style="background: #fee2e2; color: #991b1b; padding: 1rem; margin: 1rem; border-radius: 8px;">
+    {{ errorMessage }}
+  </div>
+  <div *ngIf="loading" style="background: #dbeafe; color: #1e40af; padding: 1rem; margin: 1rem; border-radius: 8px;">
+    Loading schedule...
+  </div>
+  <div *ngIf="successMessage" style="background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); color: #155724; font-weight: bold; padding: 1rem; margin: 1rem 0; border-radius: 12px; display: flex; align-items: flex-start; box-shadow: 0 2px 8px rgba(67,233,123,0.15);">
+    <mat-icon style="margin-right: 0.7rem; color: #155724; font-size: 2rem; margin-top: 0.2rem;">check_circle</mat-icon>
+    <div style="font-size: 1.15rem; white-space: pre-line;">
+      {{ successMessage }}
+      <div *ngIf="successMessage.includes('Join URL:')" style="margin-top: 1rem;">
+        <button mat-flat-button 
+                color="accent" 
+                (click)="openJoinUrl()"
+                style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+          <mat-icon>play_arrow</mat-icon>
+          Join Meeting
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="schedule-outlook-sidebar">
+    <!-- Sidebar with tiny full calendar and calendar list -->
+    <div style="padding: 1rem;">
+      <!-- Tiny Full Calendar Month View -->
+      <div class="tiny-calendar">
+        <div class="calendar-header">
+          <button mat-icon-button (click)="viewDate = addDays(viewDate, -30)"><mat-icon>chevron_left</mat-icon></button>
+          <span style="font-weight: 600; cursor:pointer;" (click)="showMonthYearPicker = !showMonthYearPicker">
+            {{ viewDate | date:'MMMM yyyy' }}
+          </span>
+          <button mat-icon-button (click)="viewDate = addDays(viewDate, 30)"><mat-icon>chevron_right</mat-icon></button>
+        </div>
+        <!-- Month/Year Picker Popup -->
+        <div *ngIf="showMonthYearPicker" class="month-year-picker-popup">
+          <select [(ngModel)]="pickerMonth" name="pickerMonth">
+            <option *ngFor="let m of [0,1,2,3,4,5,6,7,8,9,10,11]; let i = index" [value]="i">
+              {{ ('Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[i]) }}
+            </option>
+          </select>
+          <select [(ngModel)]="pickerYear" name="pickerYear">
+            <option *ngFor="let y of [].constructor(21); let i = index" [value]="i + 2015">
+              {{ i + 2015 }}
+            </option>
+          </select>
+          <button mat-raised-button (click)="setMonthYear(pickerMonth, pickerYear)"
+            style="background: linear-gradient(90deg, #43a047, #66bb6a); color: #fff; font-weight: 600; border: none; border-radius: 999px; min-width: 60px; padding: 0.3rem 0.8rem;"
+          >Go</button>
+          <button mat-raised-button (click)="showMonthYearPicker = false"
+            style="background: linear-gradient(90deg, #8e24aa, #ec407a); color: #fff; font-weight: 600; border: none; border-radius: 999px; min-width: 60px; padding: 0.3rem 0.8rem;"
+          >Cancel</button>
+        </div>
+        <div class="calendar-body">
+          <div class="calendar-header-row" *ngIf="getDayNames() && getDayNames().length > 0">
+            <span *ngFor="let dayName of getDayNames()" class="tiny-day-name">{{ dayName[0] }}</span>
+          </div>
+          <ng-container *ngIf="getMonthWeeks() && getMonthWeeks().length > 0">
+            <div *ngFor="let week of getMonthWeeks()" class="tiny-week-row">
+              <ng-container *ngIf="week && week.length > 0">
+                <span *ngFor="let day of week" 
+                      class="tiny-day-cell" 
+                      [class.selected]="isSameDay(day, selectedDate)"
+                      [class.other-month]="!isSameMonth(day, viewDate)"
+                      (click)="onSidebarDayClicked(day)">
+                  {{ day | date:'d' }}
+                </span>
+              </ng-container>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+      <!-- End Tiny Calendar -->
+      
+      <!-- Latest Upcoming Events Panel (Green Gradient) -->
+      <div style="margin: 1.5rem 0 1rem 0; background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); padding: 1.5rem; border-radius: 12px; color: white;">
+        <h4 style="margin-bottom: 1rem; font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span style="color: #ffffff;">✅</span> Latest Upcoming Events:
+        </h4>
+        
+        <div *ngIf="getUpcomingEvents().length === 0" style="color: #e5e7eb; font-size: 0.9rem;">
+          No upcoming events found
+        </div>
+        
+        <ng-container *ngIf="getUpcomingEvents() && getUpcomingEvents().length > 0">
+          <div *ngFor="let event of getUpcomingEvents()" 
+               style="margin-bottom: 0.5rem; font-size: 0.95rem; line-height: 1.4;">
+            • {{ event.title }} ({{ formatEventDate(event.start, event.meta?.timezone) }})
+          </div>
+        </ng-container>
+      </div>
+      
+      <!-- Upcoming Events Section -->
+      <div style="margin: 1.5rem 0 1rem 0;">
+        <h4 style="margin-bottom: 0.5rem; color: #2563eb; font-weight: 600;">📅 Upcoming Events</h4>
+        <!-- Filter Controls -->
+        <div style="margin-bottom: 1rem; padding: 0.8rem; background: #f8fafc; border-radius: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <div style="font-size: 0.85rem; font-weight: 500; color: #374151;">Filters:</div>
+            <button (click)="clearFilters()" style="background: #dc2626; color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">
+              Clear All
+            </button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <select [(ngModel)]="eventFilter.skill" (ngModelChange)="applyEventFilters()" style="padding: 0.3rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem;">
+              <option value="">All Skills</option>
+              <option *ngFor="let skill of getAvailableSkills()" [value]="skill">{{ skill }}</option>
+            </select>
+            <select [(ngModel)]="eventFilter.status" (ngModelChange)="applyEventFilters()" style="padding: 0.3rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem;">
+              <option value="">All Status</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+            <input [(ngModel)]="eventFilter.search" (ngModelChange)="applyEventFilters()" placeholder="Search events..." style="padding: 0.3rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.8rem;">
+          </div>
+        </div>
+        <div *ngIf="getFilteredUpcomingEvents().length === 0" style="color: #6b7280; font-size: 0.9rem; padding: 0.5rem;">
+          No upcoming events found
+        </div>
+        
+        <!-- Filter Summary -->
+        <div *ngIf="hasActiveFilters()" style="background: #dbeafe; color: #1e40af; padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+          <strong>Active Filters:</strong> 
+          <span *ngIf="eventFilter.skill">Skill: {{ eventFilter.skill }}</span>
+          <span *ngIf="eventFilter.status"> | Status: {{ eventFilter.status }}</span>
+          <span *ngIf="eventFilter.search"> | Search: "{{ eventFilter.search }}"</span>
+          <span style="margin-left: 0.5rem;">({{ getFilteredUpcomingEvents().length }} of {{ getUpcomingEvents().length }} events)</span>
+        </div>
+        
+        <ng-container *ngIf="getFilteredUpcomingEvents() && getFilteredUpcomingEvents().length > 0">
+          <div *ngFor="let event of getFilteredUpcomingEvents()" 
+               style="background: #f3f4f6; padding: 1rem; margin: 0.5rem 0; border-radius: 8px; border-left: 4px solid #2563eb; cursor: pointer;" (click)="onEventClicked({event: event})">
+          <div style="font-weight: 600; color: #1f2937; margin-bottom: 0.3rem; font-size: 1rem;">{{ event.title }}</div>
+          <div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 0.3rem;">
+            📅 {{ formatEventTimeInUserTimezone(event.start, event.meta?.timezone) }}
+          </div>
+          <div style="font-size: 0.8rem; color: #059669; margin-bottom: 0.3rem; font-weight: 500;">
+            ⏱️ {{ getEventDuration(event) }} • {{ getEventSkill(event) }}
+          </div>
+          <div *ngIf="event.meta?.description" style="font-size: 0.8rem; color: #6b7280; margin-bottom: 0.3rem; line-height: 1.3;">
+            {{ getEventDescription(event) }}
+          </div>
+          <div *ngIf="event.meta?.attendees" style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 0.3rem;">
+            👥 {{ event.meta.attendees }}
+          </div>
+          <div style="font-size: 0.75rem; color: #059669; font-weight: 500; display: flex; align-items: center; gap: 0.3rem;">
+            <span style="width: 8px; height: 8px; background: #059669; border-radius: 50%; display: inline-block;"></span>
+            {{ getEventStatus(event) }}
+          </div>
+        </div>
+        </ng-container>
+      </div>
+      
+      <h3>Calendar Sidebar</h3>
+      <p style="font-weight: 600; color: #2563eb; margin-bottom: 0.5rem;">Selected Date: {{ selectedDate | date:'EEEE, MMM d, yyyy' }}</p>
+      <p style="font-size: 0.9rem; color: #6b7280; margin-bottom: 1rem;">{{ getSelectedDateSummary() }}</p>
+      <p *ngIf="getEventsForSelectedDate().length > 0" style="color: #059669; font-size: 0.9rem; margin-top: 0.5rem; font-weight: 500;">
+        ✅ {{ getEventsForSelectedDate().length }} event(s) scheduled for {{ selectedDate | date:'MMM d, yyyy' }}
+      </p>
+      <p *ngIf="getEventsForSelectedDate().length === 0" style="color: #6b7280; font-size: 0.9rem; margin-top: 0.5rem;">
+        📅 No events scheduled for {{ selectedDate | date:'MMM d, yyyy' }}
+      </p>
+      <ng-container *ngIf="getEventsForSelectedDate() && getEventsForSelectedDate().length > 0">
+        <div *ngFor="let event of getEventsForSelectedDate()">
+          <div style="background: #e3f2fd; padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px;">
+            <strong>{{ event.title }}</strong><br>
+            {{ formatEventTimeInUserTimezone(event.start, event.meta?.timezone) }}
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+  
+  <div class="schedule-outlook-main">
+    <div class="schedule-outlook-header">
+      <div class="header-section new-event-btn" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <!-- Universal Zoom Connection Button -->
+        <div class="zoom-connect-parent" style="position: relative; display: inline-block;">
+          <button mat-mini-fab 
+                  [color]="zoomConnected ? 'accent' : 'warn'" 
+                  class="zoom-connect-hero" 
+                  (mouseenter)="showConnectNow=true" (mouseleave)="showConnectNow=false"
+                  (click)="connectZoom()"
+                  [disabled]="zoomConnectionLoading"
+                  style="transform: scale(0.8);">
+            <div *ngIf="zoomConnectionLoading">
+              <mat-icon class="fa-spin" style="font-size: 18px;">autorenew</mat-icon>
+            </div>
+            <div *ngIf="!zoomConnectionLoading && zoomConnected">
+              <img src="https://st1.zoom.us/zoom.ico" alt="Zoom" style="width: 16px; height: 16px;">
+            </div>
+            <div *ngIf="!zoomConnectionLoading && !zoomConnected">
+              <img src="https://st1.zoom.us/zoom.ico" alt="Zoom" style="width: 16px; height: 16px;">
+            </div>
+          </button>
+          <div *ngIf="showConnectNow && zoomConnected" class="zoom-connect-tooltip">Zoom Connected</div>
+          <div *ngIf="showConnectNow && !zoomConnected" class="zoom-connect-tooltip">Connect Zoom</div>
+        </div>
+        
+        <button mat-stroked-button 
+                color="accent" 
+                class="zoom-event-hero" 
+                (click)="openZoomScheduler()"
+                style="font-size: 12px; padding: 0.3rem 0.6rem; min-width: auto;">
+          <img src="https://st1.zoom.us/zoom.ico" alt="Zoom" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"> 
+          Schedule
+        </button>
+        
+        
+        
+  <button mat-stroked-button 
+    color="accent" 
+    (click)="showInvitationSyncForm(); scrollToInviteDialog()"
+    #inviteBtn
+    style="font-size: 12px; padding: 0.3rem 0.6rem; min-width: auto;">
+    <mat-icon style="font-size: 16px;">mail</mat-icon>
+    <span>Invite</span>
+  </button>
+      </div>
+      <div class="header-section nav-btns">
+        <button mat-icon-button aria-label="Previous" (click)="previousPeriod()" style="margin-right: 0.5rem;">
+          <mat-icon fontIcon="chevron_left" aria-label="Previous">chevron_left</mat-icon>
+        </button>
+        <button mat-stroked-button (click)="goToToday()" style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500; font-size: 1.1rem; padding: 0.5rem 1.2rem; border-radius: 8px;">
+          <mat-icon style="font-size: 1.3rem;">calendar_today</mat-icon>
+          Today
+        </button>
+        <button mat-icon-button aria-label="Next" (click)="nextPeriod()" style="margin-left: 0.5rem;">
+          <mat-icon fontIcon="chevron_right" aria-label="Next">chevron_right</mat-icon>
+        </button>
+      </div>
+      <div class="header-section date-display">
+        {{ getViewTitle() }}
+      </div>
+      <div class="header-section view-buttons">
+        <button mat-button [color]="view === CalendarView.Day ? 'primary' : ''" (click)="setView(CalendarView.Day)">
+          <mat-icon fontIcon="view_day" aria-label="Day">view_day</mat-icon> Day
+        </button>
+        <button mat-button [color]="view === CalendarView.Week ? 'primary' : ''" (click)="setView(CalendarView.Week)">
+          <mat-icon fontIcon="view_week" aria-label="Week">view_week</mat-icon> Week
+        </button>
+        <button mat-button [color]="view === CalendarView.Month ? 'primary' : ''" (click)="setView(CalendarView.Month)">
+          <mat-icon fontIcon="calendar_month" aria-label="Month">calendar_month</mat-icon> Month
+        </button>
+      </div>
+    </div>
+    
+    <div class="schedule-outlook-calendar-area">
+      <!-- Custom Outlook-Style Calendar Grid -->
+      <div class="calendar-container">
+        <!-- Week View -->
+        <div *ngIf="view === CalendarView.Week" class="week-view">
+          <div class="calendar-header">
+            <div class="time-column"></div>
+            <div *ngFor="let day of getWeekDays()" class="day-header" [class.today]="isToday(day)">
+              <div class="day-name">{{ day | date:'EEE' }}</div>
+              <div class="day-date">{{ day | date:'d' }}</div>
+            </div>
+          </div>
+          <div class="calendar-body">
+            <div class="time-slots">
+              <div *ngFor="let hour of getHours()" class="time-slot" [attr.data-hour]="hour">
+                <div class="time-label">{{ hour }}:00</div>
+                <div class="time-grid">
+                  <div *ngFor="let day of getWeekDays()" class="day-cell" (click)="onHourSegmentClicked({date: getDateTime(day, hour)})">
+                    <div *ngFor="let event of getEventsForDayAndHour(day, hour)" 
+                         class="calendar-event"
+                         [style.background-color]="event.color?.primary || '#2563eb'"
+                         (click)="onEventClicked({event: event}); $event.stopPropagation()">
+                      <div class="event-title">{{ event.title }}</div>
+                      <div class="event-time">{{ formatEventTimeOnly(event.start, event.meta?.timezone) }} - {{ formatEventTimeOnly(event.end, event.meta?.timezone) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Month View -->
+        <div *ngIf="view === CalendarView.Month" class="month-view">
+          <div class="calendar-header">
+            <div *ngFor="let dayName of getDayNames()" class="day-name-header">{{ dayName }}</div>
+          </div>
+          <div class="calendar-body">
+            <div *ngFor="let week of getMonthWeeks()" class="week-row">
+              <div *ngFor="let day of week" 
+                   class="day-cell"
+                   [class.other-month]="!isSameMonth(day, viewDate)"
+                   [class.today]="isToday(day)"
+                   (click)="onSidebarDayClicked(day)">
+                <div class="day-number">{{ day | date:'d' }}</div>
+                <div class="day-events">
+                  <div *ngFor="let event of getEventsForDay(day)" 
+                       class="calendar-event small"
+                       [style.background-color]="event.color?.primary || '#2563eb'"
+                       (click)="onEventClicked({event: event}); $event.stopPropagation()">
+                    {{ event.title }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Day View -->
+        <div *ngIf="view === CalendarView.Day" class="day-view">
+          <div class="calendar-header">
+            <div class="time-column"></div>
+            <div class="day-header">
+              <div class="day-name">{{ viewDate | date:'EEEE' }}</div>
+              <div class="day-date">{{ viewDate | date:'longDate' }}</div>
+            </div>
+          </div>
+          <div class="calendar-body">
+            <div class="time-slots">
+              <div *ngFor="let hour of getHours()" class="time-slot">
+                <div class="time-label">{{ hour }}:00</div>
+                <div class="day-cell" (click)="onHourSegmentClicked({date: getDateTime(viewDate, hour)})">
+                  <div *ngFor="let event of getEventsForDayAndHour(viewDate, hour)" 
+                       class="calendar-event" 
+                       [style.background-color]="event.color?.primary || '#2563eb'"
+                       (click)="onEventClicked({event: event}); $event.stopPropagation()">
+                    <div class="event-title">{{ event.title }}</div>
+                    <div class="event-time">{{ formatEventTimeOnly(event.start, event.meta?.timezone) }} - {{ formatEventTimeOnly(event.end, event.meta?.timezone) }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="schedule-outlook-event-details" *ngIf="selectedEvent">
+      <h2>
+        {{ selectedEvent.title }}
+        <span *ngIf="isEventEditable(selectedEvent)" style="background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; margin-left: 0.5rem;">Owner</span>
+      </h2>
+      <button mat-stroked-button color="accent" (click)="editEvent(selectedEvent)" 
+              *ngIf="isEventEditable(selectedEvent)">Edit</button>
+      <button mat-stroked-button color="warn" (click)="deleteEvent(selectedEvent)" 
+              *ngIf="isEventEditable(selectedEvent)">Delete</button>
+      <div><strong>When:</strong> {{ formatEventTimeInUserTimezone(selectedEvent.start, selectedEvent.meta?.timezone) }} - {{ formatEventTimeInUserTimezone(selectedEvent.end, selectedEvent.meta?.timezone) }}</div>
+      <div><strong>Attendees:</strong> {{ selectedEvent.meta?.attendees }}</div>
+      <div><strong>Join Link:</strong> <a [href]="selectedEvent.meta?.meetingUrl" target="_blank">Join</a></div>
+      
+      <!-- Zoom Meeting Controls -->
+      <div style="margin: 1rem 0;">
+        <!-- Zoom Connection Status -->
+        <div style="margin-bottom: 1rem; padding: 0.8rem; border-radius: 6px; background: #f8fafc; border-left: 4px solid #6b7280;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <mat-icon style="color: #6b7280;">video_call</mat-icon>
+            <span style="font-weight: 500; color: #374151;">Zoom Integration</span>
+          </div>
+          
+          <div *ngIf="zoomConnectionLoading" style="color: #6b7280; font-size: 0.9rem;">
+            Checking Zoom connection...
+          </div>
+          
+          <div *ngIf="!zoomConnectionLoading && zoomConnected" style="color: #059669; font-size: 0.9rem;">
+            ✅ Connected to Zoom - You can create meetings
+          </div>
+          
+          <div *ngIf="!zoomConnectionLoading && !zoomConnected" style="color: #dc2626; font-size: 0.9rem;">
+            ❌ Not connected to Zoom - Connect your account to create meetings
+            <button mat-flat-button 
+                    color="primary" 
+                    (click)="connectZoom()"
+                    style="background: #2563eb; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; margin-left: 0.5rem; font-size: 0.8rem;">
+              <mat-icon style="font-size: 1rem;">link</mat-icon>
+              Connect Zoom
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!selectedEvent.meta?.meetingUrl">
+          <button mat-flat-button 
+                  color="primary" 
+                  (click)="createZoomMeetingFromEvent(selectedEvent)"
+                  [disabled]="loading || !zoomConnected"
+                  style="background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+            <mat-icon>video_call</mat-icon>
+            {{ loading ? 'Creating...' : 'Create Zoom Meeting' }}
+          </button>
+        </div>
+        
+        <div *ngIf="selectedEvent.meta?.meetingUrl">
+          <!-- Meeting Status Display -->
+          <div style="margin-bottom: 1rem; padding: 0.8rem; border-radius: 6px; background: #f8fafc; border-left: 4px solid #6b7280;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <mat-icon style="color: #6b7280;">schedule</mat-icon>
+              <span style="font-weight: 500; color: #374151;">Meeting Status</span>
+            </div>
+            
+            <div style="color: #6b7280; font-size: 0.9rem;">
+              {{ getMeetingStatusText(selectedEvent.meta) }}
+            </div>
+            
+          </div>
+
+          <!-- Host Controls -->
+          <div *ngIf="isHost(selectedEvent.meta)" style="margin-bottom: 1rem;">
+            <button *ngIf="isMeetingNotStarted(selectedEvent.meta)" 
+                    mat-flat-button 
+                    color="primary" 
+                    (click)="startMeeting(selectedEvent.meta)"
+                    [disabled]="loading"
+                    style="background: #059669; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+              <mat-icon>play_arrow</mat-icon>
+              {{ loading ? 'Starting...' : 'Start Meeting' }}
+            </button>
+            
+            <button *ngIf="isMeetingLive(selectedEvent.meta)" 
+                    mat-flat-button 
+                    color="warn" 
+                    (click)="endMeeting(selectedEvent.meta)"
+                    [disabled]="loading"
+                    style="background: #dc2626; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+              <mat-icon>stop</mat-icon>
+              {{ loading ? 'Ending...' : 'End Meeting' }}
+            </button>
+            
+            <button mat-flat-button 
+                    color="accent" 
+                    (click)="joinMeetingFromEvent(selectedEvent)"
+                    style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+              <mat-icon>videocam</mat-icon>
+              Join as Host
+            </button>
+          </div>
+
+          <!-- Participant Controls -->
+          <div *ngIf="!isHost(selectedEvent.meta?.session)" style="margin-bottom: 1rem;">
+            <button *ngIf="canJoinMeeting(selectedEvent.meta?.session)" 
+                    mat-flat-button 
+                    color="accent" 
+                    (click)="joinMeetingFromEvent(selectedEvent)"
+                    style="background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">
+              <mat-icon>play_arrow</mat-icon>
+              Join Meeting
+            </button>
+            
+            <div *ngIf="!canJoinMeeting(selectedEvent.meta?.session)" 
+                 style="background: #fef3c7; color: #92400e; padding: 0.8rem; border-radius: 6px; font-size: 0.9rem;">
+              <mat-icon style="vertical-align: middle; margin-right: 0.5rem; color: #92400e;">schedule</mat-icon>
+              {{ getMeetingStatusText(selectedEvent.meta?.session) }}
+            </div>
+          </div>
+          
+          <div *ngIf="getMeetingJoinStatusFromEvent(selectedEvent).message" 
+               style="font-size: 0.8rem; color: #6b7280; margin-top: 0.5rem;">
+            {{ getMeetingJoinStatusFromEvent(selectedEvent).message }}
+          </div>
+        </div>
+      </div>
+      
+      <div><strong>Description:</strong></div>
+      <div [innerHTML]="selectedEvent.meta?.description"></div>
+      
+      <!-- OK Button positioned at bottom right -->
+      <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+        <button mat-flat-button color="primary" (click)="closeEventDetails()" style="background: #2563eb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">
+          OK
+        </button>
+      </div>
+    </div>
+    
+    <!-- Event Dialog -->
+    <ng-template #eventDialog>
+      <form #eventForm="ngForm" class="event-dialog-form single-page-layout">
+        <!-- Header -->
+        <div class="event-dialog-header">
+                     <h2 class="event-dialog-title">{{ isEditing ? 'Edit Event' : 'Create New Event' }}</h2>
+          <div class="event-dialog-actions">
+
+                         <button mat-stroked-button type="button" (click)="closeEventDialog()" style="background: #e53935 !important; color: #fff !important; border-color: #e53935 !important;">Cancel</button>
+            <button mat-flat-button color="primary" class="new-event-hero" type="button" (click)="createEvent(eventForm)">
+              <mat-icon>save</mat-icon> {{ isEditing ? 'Update' : 'Create Event' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="event-dialog-content">
+          <!-- Left Side - Event Details -->
+          <div class="event-details-section">
+            <!-- Title -->
+            <div class="form-section">
+              <h3 class="section-title">Event Details</h3>
+              <mat-form-field appearance="outline" class="full-width-field">
+                <mat-label>Event Title</mat-label>
+                <input matInput name="title" [(ngModel)]="eventFormModel.title" placeholder="Enter event title" required />
+                <mat-icon matSuffix>edit</mat-icon>
+              </mat-form-field>
+
+              <!-- Skill Selection -->
+              <mat-form-field appearance="outline" class="full-width-field">
+                <mat-label>Skill/Topic</mat-label>
+                <mat-select name="skill" [(ngModel)]="eventFormModel.skill" required>
+                  <mat-option *ngFor="let skill of skills" [value]="skill.id">
+                    {{ skill.name }}
+                  </mat-option>
+                </mat-select>
+                <mat-icon matSuffix>school</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Invite Members -->
+            <div class="form-section">
+              <h3 class="section-title">Invite Members</h3>
+              <mat-form-field appearance="outline" class="full-width-field">
+                <mat-label>Select attendees from database</mat-label>
+                <mat-select name="attendees" [(ngModel)]="eventFormModel.attendees" multiple>
+                  <mat-option *ngFor="let user of allUsers" [value]="user.email" [disabled]="user.email === currentUser?.email">
+                    {{ user.name }} ({{ user.email }})
+                  </mat-option>
+                </mat-select>
+                <mat-icon matSuffix>group_add</mat-icon>
+              </mat-form-field>
+              <div class="attendees-preview" *ngIf="getAttendeesList().length > 0">
+                <div class="attendee-chip" *ngFor="let attendee of getAttendeesList()">
+                  <mat-icon>person</mat-icon>
+                  <span>{{ attendee }}</span>
+                  <button mat-icon-button class="remove-attendee" (click)="removeAttendee(attendee)">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Schedule Meeting Details -->
+            <div class="form-section">
+              <h3 class="section-title">Schedule Meeting Details</h3>
+
+                             <!-- Date and Duration -->
+               <div class="datetime-row">
+                 <div class="date-field" style="display: flex; flex-direction: column;">
+                   <label style="font-weight: 500;">Date</label>
+                   <input
+                     type="date"
+                     [(ngModel)]="eventFormModel.date"
+                     name="date"
+                     class="profile-edit-input"
+                     [min]="todayString"
+                     required
+                   />
+                   <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.3rem; font-style: italic;">
+                     💡 Please ensure a 24-hour gap between scheduled events
+                   </div>
+                 </div>
+                <div style="display: flex; flex-direction: column; margin-left: 1rem;">
+                  <label style="font-weight: 500;">Start time</label>
+                  <div class="start-time-picker">
+                    <mat-icon class="start-time-icon">schedule</mat-icon>
+                    <select [(ngModel)]="eventFormModel.startHour" name="startHour" class="start-time-select">
+                      <option *ngFor="let h of hours12" [value]="h" [disabled]="isHourDisabled(h)">{{ h }}</option>
+                    </select>
+                    <span class="start-time-separator">:</span>
+                    <select [(ngModel)]="eventFormModel.startMinute" name="startMinute" class="start-time-select">
+                      <option *ngFor="let m of minutesZoom" [value]="m" [disabled]="isMinuteDisabled(m)">{{ m < 10 ? '0' + m : m }}</option>
+                    </select>
+                    <select [(ngModel)]="eventFormModel.startAMPM" name="startAMPM" class="start-time-select">
+                      <option *ngFor="let ap of ampm" [value]="ap">{{ ap }}</option>
+                    </select>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; margin-left: 1rem;">
+                  <label style="font-weight: 500;">Duration</label>
+                  <select [(ngModel)]="eventFormModel.duration" name="duration" class="profile-edit-input" style="width: 100px; border-radius: 1rem; border: 1.5px solid #e0e7ef; background: #fff; font-weight: 100; font-size: 0.80rem; text-align: center; padding: 0.5rem 0.2rem; margin-right: 0.2rem;">
+                    <option [value]="30">30 mins</option>
+                    <option [value]="45">45 mins</option>
+                    <option [value]="60">1 hour</option>
+                    <option [value]="90">1.5 hours</option>
+                    <option [value]="120">2 hours</option>
+                  </select>
+                </div>
+                <div style="display: flex; flex-direction: column; margin-left: 1rem;">
+                  <label style="font-weight: 500;">Time Zone</label>
+                  <select [(ngModel)]="eventFormModel.timezone" name="timezone" class="profile-edit-input" style="width: 100px; border-radius: 1rem; border: 1.5px solid #e0e7ef; background: #fff; font-weight: 100; font-size: 0.80rem; text-align: center; padding: 0.5rem 0.2rem; margin-right: 0.2rem;" (ngModelChange)="onTimezoneChange()">
+                    <option *ngFor="let tz of timezones" [value]="tz.name">{{ tz.description }} ({{ tz.abbreviation }})</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Session Type and Difficulty -->
+              <div class="datetime-row" style="margin-top: 1rem;">
+                <div style="display: flex; flex-direction: column;">
+                  <label style="font-weight: 500;">Session Type</label>
+                  <select [(ngModel)]="eventFormModel.sessionType" name="sessionType" class="profile-edit-input" style="width: 120px; border-radius: 1rem; border: 1.5px solid #e0e7ef; background: #fff; font-weight: 100; font-size: 0.80rem; text-align: center; padding: 0.5rem 0.2rem;">
+                    <option value="one-on-one">One-on-One</option>
+                    <option value="group">Group Session</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="webinar">Webinar</option>
+                  </select>
+                </div>
+                <div style="display: flex; flex-direction: column; margin-left: 1rem;">
+                  <label style="font-weight: 500;">Difficulty Level</label>
+                  <select [(ngModel)]="eventFormModel.difficulty" name="difficulty" class="profile-edit-input" style="width: 120px; border-radius: 1rem; border: 1.5px solid #e0e7ef; background: #fff; font-weight: 100; font-size: 0.80rem; text-align: center; padding: 0.5rem 0.2rem;">
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+                <div style="display: flex; flex-direction: column; margin-left: 1rem;">
+                  <label style="font-weight: 500;">Max Participants</label>
+                  <select [(ngModel)]="eventFormModel.maxParticipants" name="maxParticipants" class="profile-edit-input" style="width: 120px; border-radius: 1rem; border: 1.5px solid #e0e7ef; background: #fff; font-weight: 100; font-size: 0.80rem; text-align: center; padding: 0.5rem 0.2rem;">
+                    <option [value]="1">1 person</option>
+                    <option [value]="5">5 people</option>
+                    <option [value]="10">10 people</option>
+                    <option [value]="20">20 people</option>
+                    <option [value]="50">50 people</option>
+                  </select>
+                </div>
+              </div>
+
+                             <!-- Price - Commented out for future use -->
+               <!--
+               <div style="margin-top: 1rem;">
+                 <label style="font-weight: 500;">Price (USD)</label>
+                 <input
+                   type="number"
+                   [(ngModel)]="eventFormModel.price"
+                   name="price"
+                   class="profile-edit-input"
+                   placeholder="0.00"
+                   min="0"
+                   step="0.01"
+                   required
+                   style="width: 100%; margin-top: 0.3rem;"
+                 />
+               </div>
+               -->
+
+              <!-- Tags -->
+              <div style="margin-top: 1rem;">
+                <label style="font-weight: 500;">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  [(ngModel)]="eventFormModel.tags"
+                  name="tags"
+                  class="profile-edit-input"
+                  placeholder="e.g., JavaScript, React, Frontend"
+                  style="width: 100%; margin-top: 0.3rem;"
+                />
+              </div>
+              
+              <!-- Remove recurrence/repeats dropdown and end time fields -->
+
+              <!-- Location -->
+              <mat-form-field appearance="outline" class="full-width-field" *ngIf="eventFormModel.inPerson">
+                <mat-label>Location</mat-label>
+                <input matInput name="location" [(ngModel)]="eventFormModel.location" placeholder="Enter meeting location" />
+                <mat-icon matSuffix>place</mat-icon>
+              </mat-form-field>
+
+              <!-- Description -->
+              <mat-form-field appearance="outline" class="full-width-field">
+                <mat-label>Description</mat-label>
+                <textarea matInput name="description" [(ngModel)]="eventFormModel.description" rows="4" placeholder="Add event description..."></textarea>
+                <mat-icon matSuffix>notes</mat-icon>
+              </mat-form-field>
+            </div>
+          </div>
+
+
+        </div>
+      </form>
+    </ng-template>
+  </div>
+</div>
+
+<!-- Manual Sync Modal for Free Zoom Accounts -->
+<div *ngIf="showManualSyncModal" class="modal-overlay" (click)="closeManualSyncForm()">
+  <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 600px; width: 90%;">
+    <div class="modal-header">
+      <h2>📋 Manually Sync Zoom Meeting</h2>
+      <button mat-icon-button (click)="closeManualSyncForm()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p style="margin-bottom: 1rem; color: #666;">
+        Since you have a free Zoom account, please enter your meeting details manually to sync them with your calendar.
+      </p>
+      
+      <form (ngSubmit)="submitManualSync()" #manualSyncFormRef="ngForm">
+        <!-- Meeting Topic -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Meeting Topic *</mat-label>
+          <input matInput 
+                 name="topic" 
+                 [(ngModel)]="manualSyncForm.topic" 
+                 placeholder="Enter your meeting topic"
+                 required />
+          <mat-icon matSuffix>title</mat-icon>
+        </mat-form-field>
+
+        <!-- Meeting Start Time -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Start Date & Time *</mat-label>
+          <input matInput 
+                 type="datetime-local"
+                 name="startTime" 
+                 [(ngModel)]="manualSyncForm.startTime"
+                 required />
+          <mat-icon matSuffix>schedule</mat-icon>
+        </mat-form-field>
+
+        <!-- Duration -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Duration (minutes) *</mat-label>
+          <input matInput 
+                 type="number"
+                 name="duration" 
+                 [(ngModel)]="manualSyncForm.duration"
+                 min="1"
+                 max="480"
+                 required />
+          <mat-icon matSuffix>timer</mat-icon>
+        </mat-form-field>
+
+        <!-- Meeting ID (optional) -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Meeting ID (optional)</mat-label>
+          <input matInput 
+                 name="meetingId" 
+                 [(ngModel)]="manualSyncForm.meetingId" 
+                 placeholder="e.g., 123-456-7890" />
+          <mat-icon matSuffix>confirmation_number</mat-icon>
+        </mat-form-field>
+
+        <!-- Join URL (optional) -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Join URL (optional)</mat-label>
+          <input matInput 
+                 name="joinUrl" 
+                 [(ngModel)]="manualSyncForm.joinUrl" 
+                 placeholder="https://zoom.us/j/..." />
+          <mat-icon matSuffix>link</mat-icon>
+        </mat-form-field>
+
+        <!-- Meeting Password (optional) -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Meeting Password (optional)</mat-label>
+          <input matInput 
+                 name="password" 
+                 [(ngModel)]="manualSyncForm.password" 
+                 placeholder="Enter meeting password" />
+          <mat-icon matSuffix>lock</mat-icon>
+        </mat-form-field>
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="error-message" style="margin: 1rem 0;">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="modal-actions" style="margin-top: 1.5rem;">
+          <button mat-flat-button 
+                  type="button"
+                  (click)="closeManualSyncForm()"
+                  style="margin-right: 1rem;">
+            Cancel
+          </button>
+          <button mat-flat-button 
+                  color="primary"
+                  type="submit"
+                  [disabled]="loading || !manualSyncFormRef.form.valid">
+            <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
+            <mat-icon *ngIf="!loading">sync</mat-icon>
+            {{ loading ? 'Syncing...' : 'Sync Meeting' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Invitation Sync Modal for Free Zoom Accounts -->
+<div *ngIf="showInvitationSyncModal" class="modal-overlay" (click)="closeInvitationSyncForm()">
+  <div class="modal-content" #inviteDialog (click)="$event.stopPropagation()" style="max-width: 700px; width: 90%;">
+    <div class="modal-header">
+      <h2>🤖 Auto-Sync from Zoom Invitation</h2>
+      <button mat-icon-button (click)="closeInvitationSyncForm()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p style="margin-bottom: 1rem; color: #666;">
+        Paste your Zoom meeting invitation text below and we'll automatically extract the meeting details for you!
+      </p>
+
+        <!-- Warning to add all participant emails -->
+        <div style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; font-size: 1rem;">
+          <mat-icon style="margin-right: 0.7rem; color: #856404; font-size: 1.5rem;">warning</mat-icon>
+          <span><b>Reminder:</b> Please add all participant emails involved in the meeting to ensure everyone is included in the invitation.</span>
+        </div>
+      
+      <form (ngSubmit)="submitInvitationSync()" #invitationSyncFormRef="ngForm">
+        <!-- Invitation Text -->
+        <mat-form-field appearance="outline" class="full-width-field">
+          <mat-label>Zoom Invitation Text *</mat-label>
+          <textarea matInput 
+                   name="invitationText" 
+                   [(ngModel)]="invitationSyncForm.invitationText" 
+                   placeholder="Paste your Zoom invitation here..."
+                   rows="8"
+                   required></textarea>
+          <mat-icon matSuffix>content_paste</mat-icon>
+        </mat-form-field>
+
+        <div class="invitation-example" style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+          <h4 style="margin-bottom: 0.5rem; color: #374151;">Example invitation format:</h4>
+          <pre style="font-size: 0.8rem; color: #6b7280; white-space: pre-wrap;">John Doe is inviting you to a scheduled Zoom meeting.
+
+Topic: Weekly Team Standup
+Time: Jan 15, 2024 02:00 PM Eastern Time (US and Canada)
+
+Join Zoom Meeting
+https://zoom.us/j/1234567890?pwd=abcd1234
+
+Meeting ID: 123 456 7890
+Passcode: meeting123</pre>
+        </div>
+
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="error-message" style="margin: 1rem 0;">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="modal-actions" style="margin-top: 1.5rem;">
+          <button mat-flat-button 
+                  type="button"
+                  (click)="closeInvitationSyncForm()"
+                  style="margin-right: 1rem;">
+            Cancel
+          </button>
+          <button mat-flat-button 
+                  color="primary"
+                  type="submit"
+                  [disabled]="loading || !invitationSyncFormRef.form.valid">
+            <mat-icon *ngIf="loading">hourglass_empty</mat-icon>
+            <mat-icon *ngIf="!loading">auto_awesome</mat-icon>
+            {{ loading ? 'Auto-Syncing...' : 'Auto-Sync Meeting' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Debug info removed for production -->

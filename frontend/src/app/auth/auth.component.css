@@ -1,0 +1,216 @@
+/* Auth Container Styles */
+.auth-container {
+  max-width: 500px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  padding: 2rem 2.5rem;
+  transition: padding 0.2s;
+}
+
+@media (max-width: 600px) {
+  .auth-container {
+    padding: 1rem 0.5rem;
+    margin: 1rem 0.25rem;
+    max-width: 100vw;
+  }
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.auth-tabs .btn {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #222;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  background: #fafbfc;
+  transition: border 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #00b894;
+  outline: none;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.text-muted {
+  color: #888;
+}
+
+/* Error Message */
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.error-message p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Loading States */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 184, 148, 0.3);
+  border-radius: 50%;
+  border-top-color: #00b894;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Disabled States */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+input:disabled, select:disabled, textarea:disabled {
+  background-color: #f4f4f4;
+  cursor: not-allowed;
+}
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Profile Photo Preview */
+.mt-2 img {
+  max-width: 100px;
+  border-radius: 50%;
+  margin-top: 0.5rem;
+}
+
+/* Flex utilities for skills */
+.d-flex {
+  display: flex;
+}
+.align-items-center {
+  align-items: center;
+}
+.me-2 {
+  margin-right: 0.5rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mb-3 {
+  margin-bottom: 1rem;
+}
+.mb-4 {
+  margin-bottom: 2rem;
+}
+.mt-4 {
+  margin-top: 2rem;
+}
+
+/* Card and fade-in utility */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+}
+.fade-in {
+  animation: fadeIn 0.5s;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Responsive form controls */
+@media (max-width: 600px) {
+  .auth-tabs {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .d-flex {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .me-2 {
+    margin-right: 0;
+  }
+}
+
+/* Success Message */
+.success-message {
+  background: #e6f9ec;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.success-message p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* Reset Password Specific Styles */
+.btn-link {
+  background: none;
+  border: none;
+  color: #00b894;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  margin: 0;
+}
+
+.btn-link:hover {
+  color: #00a085;
+}
+
+.btn-link:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}

@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Build Angular Frontend",
+			"command": "npm run build --prefix frontend",
+			"group": "build",
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"type": "shell",
+			"label": "Start Backend Server",
+			"command": "npm",
+			"args": ["start", "--prefix", "backend"],
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}

@@ -1,0 +1,203 @@
+/* Professional Navigation Bar Styles */
+.nav {
+  background: #fff;
+  color: #222;
+  padding: 0.5rem 0;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.07);
+  border-bottom: 1.5px solid #ececec;
+}
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+}
+.nav-brand {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #6c47c7;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+}
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 1001;
+}
+.nav-toggle .bar {
+  width: 28px;
+  height: 3px;
+  background: #6c47c7;
+  margin: 4px 0;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+.nav-links {
+  list-style: none;
+  display: flex;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  transition: right 0.3s;
+}
+.nav-links li a,
+.nav-links li button {
+  color: #222;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.45rem 1.05rem;
+  border-radius: 22px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  outline: none;
+  transition: color 0.18s;
+  box-shadow: none;
+  cursor: pointer;
+  display: inline-block;
+  margin: 0 0.01rem;
+  font-size: 1rem;
+}
+
+.nav-links li a.active,
+.nav-links li a:hover {
+  color: #6c47c7;
+  background: transparent;
+  border: 1.5px solid transparent;
+  text-decoration: none;
+}
+
+.nav-links li button:hover {
+  color: #6c47c7;
+  background: transparent;
+  border: 1.5px solid transparent;
+}
+
+.nav-links li .logout-link button {
+  background: #f8e6e9;
+  color: #c0392b;
+  border: 1.5px solid #e57373;
+}
+
+.nav-links li .logout-link button:hover {
+  background: #e57373;
+  color: #fff;
+  border: 1.5px solid #c0392b;
+  box-shadow: 0 2px 8px rgba(231,76,60,0.12);
+}
+
+.nav-links li img {
+  border: 2.5px solid #6c47c7;
+  box-shadow: 0 2px 8px rgba(108,71,199,0.10);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nav-links li img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(108,71,199,0.2);
+}
+
+/* Main Content Area */
+.container {
+  max-width: 1200px;
+  margin: 2rem auto 0 auto;
+  padding: 2rem;
+  min-height: 70vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  transition: padding 0.2s;
+}
+
+/* Footer Styles */
+.footer {
+  background: #222;
+  color: #fff;
+  padding: 1rem 0;
+  text-align: center;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  margin-top: 2rem;
+}
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+.footer-link {
+  color: #00b894;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.footer-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+@media (max-width: 700px) {
+  .footer-container {
+    padding: 0 1rem;
+  }
+  .footer-links {
+    gap: 1rem;
+  }
+}
+
+/* Schedule Page UI/UX Polish */
+.schedule-outlook-event-details {
+  background: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.schedule-outlook-event-details h2 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.4rem;
+  color: #222;
+}
+.schedule-outlook-event-details button {
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+}
+.mat-dialog-actions[align="end"] {
+  justify-content: flex-end;
+  padding: 1rem 0 0 0;
+}
+.mat-dialog-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+@media (max-width: 900px) {
+  .schedule-outlook-event-details {
+    padding: 1rem;
+    max-width: 100%;
+  }
+}
+@media (max-width: 700px) {
+  .schedule-outlook-event-details {
+    padding: 0.5rem;
+    font-size: 0.95rem;
+  }
+}

@@ -1,0 +1,52 @@
+<!-- Professional Navigation Bar -->
+<nav class="nav">
+  <div class="nav-container">
+    <div class="nav-brand">SkillSwap</div>
+    <button class="nav-toggle" aria-label="Toggle navigation" (click)="isNavOpen = !isNavOpen">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+    <ul class="nav-links" [class.open]="isNavOpen">
+      <ng-container *ngIf="user$ | async as user; else loggedOut">
+        <li style="display: flex; align-items: center;">
+          <img *ngIf="getPhotoUrl(user?.photo)" [src]="getPhotoUrl(user?.photo)" (error)="onImgError($event)" 
+               (click)="openImagePreview(getPhotoUrl(user?.photo), user?.name || '', $event)"
+               alt="User Photo" 
+               style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; margin-right: 0.5rem; border: 2px solid #b39ddb; box-shadow: 0 1px 4px rgba(149,117,205,0.12); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+               title="Click to view full image">
+          <span style="margin-right: 1rem;">{{ user.name }}</span>
+        </li>
+        <li><a routerLink="/profile" routerLinkActive="active">Profile</a></li>
+        <li><a routerLink="/skills" routerLinkActive="active">Skills</a></li>
+        <li><a routerLink="/chat" routerLinkActive="active">Chat</a></li>
+        <li><a routerLink="/schedule" routerLinkActive="active">Schedule</a></li>
+        <li><a routerLink="/payments" routerLinkActive="active">Payments</a></li>
+        <li class="logout-link"><button (click)="logout()" class="btn btn-link">Logout</button></li>
+      </ng-container>
+      <ng-template #loggedOut>
+        <li><a routerLink="/auth" routerLinkActive="active">Sign in</a></li>
+      </ng-template>
+    </ul>
+  </div>
+</nav>
+
+<!-- Main Content Area -->
+        <main class="container">
+          <router-outlet></router-outlet>
+        </main>
+
+<!-- Global Notifications -->
+<app-notification></app-notification>
+
+<!-- Professional Footer -->
+<footer class="footer">
+  <div class="footer-container">
+    <span>&copy; {{ currentYear }} SkillSwap. All rights reserved.</span>
+    <span class="footer-links">
+      <a href="/about" class="footer-link">About</a>
+      <a href="/contact" class="footer-link">Contact</a>
+      <a href="/privacy" class="footer-link">Privacy Policy</a>
+    </span>
+  </div>
+</footer>

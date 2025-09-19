@@ -1,0 +1,254 @@
+<div class="page-header">
+  <h1>Welcome to SkillSwap</h1>
+  <p>Connect, learn, and grow with experts in your field</p>
+</div>
+
+<div class="auth-container card fade-in">
+  <div class="text-center mb-4">
+    <h2>{{ isLogin ? 'Sign In' : 'Create Account' }}</h2>
+    <p>{{ isLogin ? 'Welcome back! Sign in to your account.' : 'Join SkillSwap and start your learning journey.' }}</p>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="errorMessage">
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <!-- Success Toast Message -->
+  <div class="success-message" *ngIf="successMessage">
+    <p>{{ successMessage }}</p>
+  </div>
+
+  <div class="auth-tabs mb-4" *ngIf="!isResetPassword">
+    <button 
+      class="btn" 
+      [class.btn-primary]="isLogin" 
+      [class.btn-secondary]="!isLogin"
+      (click)="isLogin = true; errorMessage = ''"
+      [disabled]="loading">
+      Sign In
+    </button>
+    <button 
+      class="btn" 
+      [class.btn-primary]="!isLogin" 
+      [class.btn-secondary]="isLogin"
+      (click)="isLogin = false; errorMessage = ''"
+      [disabled]="loading">
+      Sign Up
+    </button>
+  </div>
+
+  <!-- Reset Password Form -->
+  <form *ngIf="isResetPassword" (ngSubmit)="onResetPassword()" class="fade-in" [class.loading]="loading">
+    <div class="text-center mb-4">
+      <h3>Reset Password</h3>
+      <p>Enter your current password and choose a new one.</p>
+    </div>
+
+    <div class="mb-3">
+      <label for="resetEmail" class="form-label">Email Address *</label>
+      <input 
+        type="email" 
+        id="resetEmail" 
+        [(ngModel)]="email" 
+        name="resetEmail" 
+        placeholder="Enter your email"
+        required
+        [disabled]="loading">
+    </div>
+
+    <div class="mb-3">
+      <label for="oldPassword" class="form-label">Current Password *</label>
+      <input 
+        type="password" 
+        id="oldPassword" 
+        [(ngModel)]="oldPassword" 
+        name="oldPassword" 
+        placeholder="Enter your current password"
+        required
+        [disabled]="loading">
+    </div>
+
+    <div class="mb-3">
+      <label for="newPassword" class="form-label">New Password *</label>
+      <input 
+        type="password" 
+        id="newPassword" 
+        [(ngModel)]="newPassword" 
+        name="newPassword" 
+        placeholder="Enter your new password"
+        required
+        [disabled]="loading">
+    </div>
+
+    <div class="mb-4">
+      <label for="confirmPassword" class="form-label">Confirm New Password *</label>
+      <input 
+        type="password" 
+        id="confirmPassword" 
+        [(ngModel)]="confirmPassword" 
+        name="confirmPassword" 
+        placeholder="Confirm your new password"
+        required
+        [disabled]="loading">
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+      <span *ngIf="loading" class="loading-spinner"></span>
+      {{ loading ? 'Updating Password...' : 'Update Password' }}
+    </button>
+
+    <div class="text-center mt-3">
+      <button type="button" class="btn btn-link" (click)="backToLogin()" [disabled]="loading">
+        Back to Sign In
+      </button>
+    </div>
+  </form>
+
+  <!-- Login/Signup Form -->
+  <form *ngIf="!isResetPassword" (ngSubmit)="onSubmit()" class="fade-in" [class.loading]="loading">
+    <!-- Basic Information -->
+    <div class="mb-3" *ngIf="!isLogin">
+      <label for="name" class="form-label">Full Name *</label>
+      <input 
+        type="text" 
+        id="name" 
+        [(ngModel)]="name" 
+        name="name" 
+        placeholder="Enter your full name"
+        required
+        [disabled]="loading">
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Email Address *</label>
+      <input 
+        type="email" 
+        id="email" 
+        [(ngModel)]="email" 
+        name="email" 
+        placeholder="Enter your email"
+        required
+        [disabled]="loading">
+    </div>
+
+    <div class="mb-4">
+      <label for="password" class="form-label">Password *</label>
+      <input 
+        type="password" 
+        id="password" 
+        [(ngModel)]="password" 
+        name="password" 
+        placeholder="Enter your password"
+        required
+        [disabled]="loading">
+    </div>
+
+    <!-- Forgot Password Link (only for login) -->
+    <div class="text-right mb-3" *ngIf="isLogin">
+      <button type="button" class="btn btn-link p-0" (click)="showResetPassword()" [disabled]="loading">
+        Forgot Password?
+      </button>
+    </div>
+
+    <!-- Profile Information (only for registration) -->
+    <div *ngIf="!isLogin" class="profile-section">
+      <h4 class="mb-3">Profile Information</h4>
+      
+      <!-- Profile Photo Upload -->
+      <div class="mb-3">
+        <label for="photo" class="form-label">Profile Photo</label>
+        <input type="file" id="photo" (change)="onPhotoSelected($event)" accept="image/*" [disabled]="loading">
+        <div *ngIf="photoPreview" class="mt-2">
+          <img [src]="photoPreview" alt="Preview" style="max-width: 100px; border-radius: 50%;">
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="title" class="form-label">Professional Title</label>
+        <input 
+          type="text" 
+          id="title" 
+          [(ngModel)]="title" 
+          name="title" 
+          placeholder="e.g., Software Developer, UX Designer, Marketing Manager"
+          [disabled]="loading">
+      </div>
+
+      <div class="mb-3">
+        <label for="location" class="form-label">Location *</label>
+        <input 
+          type="text" 
+          id="location" 
+          [(ngModel)]="location" 
+          name="location" 
+          placeholder="e.g., New York, NY or Remote"
+          [disabled]="loading"
+          required>
+      </div>
+
+      <div class="mb-3">
+        <label for="timezone" class="form-label">Timezone</label>
+        <select 
+          id="timezone" 
+          [(ngModel)]="timezone" 
+          name="timezone"
+          [disabled]="loading"
+          class="form-select">
+          <option value="">Select your timezone</option>
+          <option value="America/New_York">Eastern Time (ET)</option>
+          <option value="America/Chicago">Central Time (CT)</option>
+          <option value="America/Denver">Mountain Time (MT)</option>
+          <option value="America/Los_Angeles">Pacific Time (PT)</option>
+          <option value="Europe/London">London (GMT)</option>
+          <option value="Europe/Paris">Paris (CET)</option>
+          <option value="Asia/Tokyo">Tokyo (JST)</option>
+          <option value="Asia/Shanghai">Shanghai (CST)</option>
+          <option value="Australia/Sydney">Sydney (AEST)</option>
+          <option value="UTC">UTC</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="about" class="form-label">About You</label>
+        <textarea 
+          id="about" 
+          [(ngModel)]="about" 
+          name="about" 
+          placeholder="Tell us about yourself, your experience, and what you're passionate about..."
+          rows="3"
+          [disabled]="loading"
+          class="form-control"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Skills <span style="color: #e53935;">*</span></label>
+        <div *ngFor="let skill of skills; let i = index" class="d-flex align-items-center mb-2">
+          <input type="text" [(ngModel)]="skill.name" name="skillName{{i}}" placeholder="Skill name" class="form-control me-2" [disabled]="loading" required>
+          <select [(ngModel)]="skill.level" name="skillLevel{{i}}" class="form-select me-2" [disabled]="loading" required>
+            <option value="">Level</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Expert">Expert</option>
+          </select>
+          <button type="button" class="btn btn-danger btn-sm" (click)="removeSkill(i)" [disabled]="loading">Remove</button>
+        </div>
+        <button type="button" class="btn btn-success btn-sm" (click)="addSkill()" [disabled]="loading">Add Skill</button>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+      <span *ngIf="loading" class="loading-spinner"></span>
+      {{ loading ? (isLogin ? 'Signing In...' : 'Creating Account...') : (isLogin ? 'Sign In' : 'Create Account') }}
+    </button>
+  </form>
+
+  <div class="text-center mt-4" *ngIf="!isResetPassword">
+    <p class="text-muted">
+      {{ isLogin ? "Don't have an account?" : "Already have an account?" }}
+      <a (click)="isLogin = !isLogin; errorMessage = ''" style="cursor: pointer;" [class.disabled]="loading">
+        {{ isLogin ? 'Sign up here' : 'Sign in here' }}
+      </a>
+    </p>
+  </div>
+</div>

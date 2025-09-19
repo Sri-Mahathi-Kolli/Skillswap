@@ -1,0 +1,210 @@
+<div class="page-header">
+  <h1>{{ isOwnProfile ? 'Profile' : user?.name + '\'s Profile' }}</h1>
+  <p>{{ isOwnProfile ? 'Manage your professional profile and showcase your skills' : 'View ' + user?.name + '\'s professional profile and skills' }}</p>
+</div>
+
+<div class="profile-container fade-in">
+  <!-- Profile Header Card -->
+  <div class="card mb-4">
+    <div class="profile-header">
+      <div class="profile-photo-container">
+        <img 
+          *ngIf="user && getPhotoUrl(user?.photo)" 
+          [src]="getPhotoUrl(user?.photo)" 
+          (error)="onImgError($event)" 
+          alt="Profile Photo" 
+          class="profile-avatar">
+        <div 
+          *ngIf="!user?.photo || !getPhotoUrl(user?.photo)" 
+          class="profile-avatar-placeholder">
+          <mat-icon class="avatar-icon">person</mat-icon>
+        </div>
+        <div *ngIf="editMode && isOwnProfile" class="photo-upload-controls">
+          <button class="btn btn-outline mt-2" type="button" (click)="triggerPhotoUpload()">Change Photo</button>
+          <input #photoInput type="file" (change)="onPhotoSelected($event)" accept="image/*" style="display: none;">
+        </div>
+      </div>
+      <div class="profile-info">
+        <div *ngIf="!editMode">
+          <div class="profile-header-row" style="display: flex; align-items: center; justify-content: space-between;">
+            <h2 style="margin: 0;">
+              {{ user.name }}
+            </h2>
+            <span style="cursor:pointer; position:relative; margin-left: 10px; font-size: 1.2rem; display: flex; align-items: center;" (click)="goToNotifications()">
+              <mat-icon style="cursor:pointer;">notifications</mat-icon>
+              <span *ngIf="unseenNotificationCount > 0 || getPendingConnectionRequestCount() > 0" style="position:absolute; top:-6px; right:-10px; background:#e53935; color:#fff; border-radius:50%; padding:1px 5px; font-size:0.7rem; font-weight:bold;">
+                {{ unseenNotificationCount + getPendingConnectionRequestCount() }}
+              </span>
+            </span>
+          </div>
+          <div>{{ user.title }}</div>
+          <div>{{ user.location }}</div>
+          <div>{{ user.email }}</div>
+          <div>{{ user.phone }}</div>
+          <div>{{ user.website }}</div>
+        </div>
+        <div *ngIf="editMode">
+          <input [(ngModel)]="user.name" name="name" class="profile-edit-input" placeholder="Name">
+          <input [(ngModel)]="user.title" name="title" class="profile-edit-input" placeholder="Title">
+          <input [(ngModel)]="user.location" name="location" class="profile-edit-input" placeholder="Location">
+          <input [(ngModel)]="user.email" name="email" class="profile-edit-input" placeholder="Email">
+          <input [(ngModel)]="user.phone" name="phone" class="profile-edit-input" placeholder="Phone">
+          <input [(ngModel)]="user.website" name="website" class="profile-edit-input" placeholder="Website">
+        </div>
+        <div class="profile-stats">
+          <div class="stat">
+            <span class="stat-number">{{ user.connections?.length || 0 }}</span>
+            <span class="stat-label">Connections</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">{{ user.skills.length }}</span>
+            <span class="stat-label">Skills</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">{{ user.rating }}</span>
+            <span class="stat-label">Rating</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Show edit button only for own profile -->
+    <button *ngIf="!editMode && isOwnProfile" class="btn btn-primary mt-3" (click)="enterEditMode()">Edit Profile</button>
+    
+    <!-- Show connection/message buttons for other users' profiles -->
+    <div *ngIf="!editMode && !isOwnProfile" class="d-flex gap-2 mt-3">
+      <button 
+        [class]="getConnectionButtonClass()" 
+        (click)="onConnectionButtonClick()"
+        [disabled]="connectionStatus === 'pending' && connectionDetails?.userRole === 'recipient'">
+        {{ getConnectionButtonText() }}
+      </button>
+      <!-- Show notification about pending requests -->
+      <div *ngIf="connectionStatus === 'pending' && connectionDetails?.userRole === 'recipient'" 
+           class="alert alert-info mt-2" style="font-size: 0.875rem; padding: 0.5rem;">
+        <i class="material-icons" style="font-size: 1rem; margin-right: 0.5rem;">info</i>
+        Check your notifications to accept connection requests
+      </div>
+    </div>
+    
+    <!-- Show save/cancel buttons only for own profile in edit mode -->
+    <div *ngIf="editMode && isOwnProfile" class="d-flex gap-2 mt-3">
+      <button class="btn btn-primary" (click)="onSave()">Save</button>
+      <button class="btn btn-secondary" (click)="cancelEdit()">Cancel</button>
+    </div>
+    <span *ngIf="successMessage" class="success">{{ successMessage }}</span>
+    <span *ngIf="errorMessage" class="error">{{ errorMessage }}</span>
+  </div>
+
+  <!-- About Section -->
+  <div class="card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>About</h3>
+    </div>
+    <div *ngIf="!editMode" class="profile-about">
+      <p>{{ user.about }}</p>
+    </div>
+    <div *ngIf="editMode" class="profile-about-edit">
+      <textarea 
+        [(ngModel)]="user.about" 
+        rows="4" 
+        placeholder="Tell us about yourself..."
+        class="mb-3">
+      </textarea>
+    </div>
+  </div>
+
+  <!-- Payment Settings Section (only for own profile) -->
+  <div *ngIf="isOwnProfile" class="card mb-4">
+    <app-payment-settings [userId]="user?._id" (settingsChange)="onPaymentSettingsChange($event)"></app-payment-settings>
+  </div>
+
+  <!-- Time Zone Selector -->
+  <div class="card mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3><span class="material-icons" aria-hidden="true">schedule</span> Time Zone</h3>
+    </div>
+    <div class="profile-timezone">
+      <label for="timezone">Preferred Time Zone:</label>
+      <select id="timezone" [(ngModel)]="user.timezone" [disabled]="!editMode">
+        <ng-container *ngIf="timezones && timezones.length > 0">
+          <option *ngFor="let tz of timezones" [value]="tz.name">
+            {{ tz.description }} ({{ tz.abbreviation }})
+          </option>
+        </ng-container>
+      </select>
+      <span class="current-tz">Current: {{ user.timezone }}</span>
+    </div>
+  </div>
+
+  <!-- Skills Section -->
+  <div class="card">
+    <h3 class="mb-4">Skills & Expertise</h3>
+    <div style="position: relative; max-width: 400px; margin-bottom: 1.5rem;">
+      <input
+        type="text"
+        [ngModel]="skillSearch"
+        (ngModelChange)="onSkillSearchChange($event)"
+        class="profile-edit-input mb-3"
+        placeholder="Search or filter skills..."
+        style="width: 100%; padding-right: 2.5rem;"
+        #skillSearchInput
+      />
+      <button
+        *ngIf="skillSearch"
+        (click)="clearSkillSearch(skillSearchInput)"
+        style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.2rem; color: #888; cursor: pointer;"
+        aria-label="Clear search"
+        type="button"
+      >✕</button>
+    </div>
+    <div *ngIf="paginatedSkills.length === 0" class="text-muted" style="margin-bottom: 1.5rem;">No skills found.</div>
+
+    <!-- Add Skill Form (edit mode only for own profile) -->
+    <div *ngIf="editMode && isOwnProfile" class="add-skill-form mb-4" style="background: #f8f9fa; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); padding: 1.5rem 1rem 1rem 1rem; max-width: 500px; margin: 0 auto 2rem auto;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+        <mat-icon style="color: #1976d2;">add_circle</mat-icon>
+        <h4 style="margin: 0; color: #1976d2; font-weight: 600;">{{ editingSkillIndex !== null ? 'Edit Skill' : 'Add New Skill' }}</h4>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <label style="font-weight: 500;">Skill Name</label>
+        <input [(ngModel)]="newSkillName" placeholder="e.g. JavaScript" class="profile-edit-input" style="border-radius: 8px; border: 1px solid #ccc; padding: 0.5rem;" />
+        <label style="font-weight: 500;">Level</label>
+        <select [(ngModel)]="newSkillLevel" class="profile-edit-input" style="border-radius: 8px; border: 1px solid #ccc; padding: 0.5rem;">
+          <option value="">Select level</option>
+          <option value="Beginner">Beginner</option>
+          <option value="Intermediate">Intermediate</option>
+          <option value="Expert">Expert</option>
+        </select>
+        <label style="font-weight: 500;">Description</label>
+        <textarea [(ngModel)]="newSkillDescription" placeholder="Describe your experience..." class="profile-edit-input" style="border-radius: 8px; border: 1px solid #ccc; padding: 0.5rem; min-height: 60px;"></textarea>
+        <label style="font-weight: 500;">Tags <span style="font-weight: 400; color: #888;">(comma separated)</span></label>
+        <input [(ngModel)]="newSkillTags" placeholder="e.g. ES6, TypeScript, Angular" class="profile-edit-input" style="border-radius: 8px; border: 1px solid #ccc; padding: 0.5rem;" />
+        <button class="btn btn-primary" style="margin-top: 1rem; width: 100%; font-weight: 600; font-size: 1.1rem; border-radius: 8px; background: linear-gradient(90deg, #1976d2, #42a5f5); border: none;" (click)="addSkillFromForm()">
+          <mat-icon style="vertical-align: middle; margin-right: 6px;">{{ editingSkillIndex !== null ? 'save' : 'add' }}</mat-icon>
+          {{ editingSkillIndex !== null ? 'Save Skill' : 'Add Skill' }}
+        </button>
+      </div>
+    </div>
+    <hr *ngIf="editMode && isOwnProfile" style="margin: 2rem 0; border: none; border-top: 1.5px solid #e0e0e0;" />
+
+    <div class="skills-grid" *ngIf="paginatedSkills && paginatedSkills.length > 0">
+      <div *ngFor="let skill of paginatedSkills; let i = index" class="skill-item">
+        <div class="skill-header">
+          <h4>{{ skill.name }}</h4>
+          <div *ngIf="editMode && isOwnProfile">
+            <button class="btn btn-secondary btn-sm" (click)="editSkillFromForm(i)">Edit</button>
+            <button class="btn btn-danger btn-sm" (click)="removeSkill(i)">Remove</button>
+          </div>
+        </div>
+        <div class="skill-level">{{ skill.level }}</div>
+        <div class="skill-description">{{ skill.description }}</div>
+        <div class="skill-tags" *ngIf="skill.tags && skill.tags.length > 0">
+          <span class="tag" *ngFor="let tag of skill.tags">{{ tag }}</span>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="!paginatedSkills || paginatedSkills.length === 0" class="no-skills">
+      <p>No skills to display</p>
+    </div>
+  </div>
+</div>
