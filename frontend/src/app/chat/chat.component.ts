@@ -1257,7 +1257,7 @@ export class ChatComponent implements OnInit, OnDestroy {
   const filename = attachment.filename;
   if (!filename) return;
   // Use absolute URL for reliability
-  const backendUrl = 'http://localhost:3000';
+  const backendUrl = environment.apiUrl.replace(/\/api$/, '');
   const downloadUrl = `${backendUrl}/api/files/download/${filename}?originalName=${encodeURIComponent(attachment.originalName || attachment.name || filename)}`;
   // Open in new tab to avoid browser blocking and CORS issues
   window.open(downloadUrl, '_blank');

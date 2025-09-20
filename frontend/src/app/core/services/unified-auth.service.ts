@@ -1,3 +1,4 @@
+import { environment } from '../../../environments/environment';
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of, throwError, catchError, timeout, retry } from 'rxjs';
@@ -54,7 +55,7 @@ export interface ProfileUpdateRequest {
   providedIn: 'root'
 })
 export class UnifiedAuthService {
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = environment.apiUrl;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
   

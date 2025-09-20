@@ -1,3 +1,4 @@
+import { environment } from '../../environments/environment';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -103,7 +104,7 @@ export interface TimeSlot {
   providedIn: 'root'
 })
 export class ScheduleService {
-  private apiUrl = 'http://localhost:3000/api/sessions';
+  private apiUrl = environment.apiUrl + '/sessions';
 
   constructor(private http: HttpClient) {}
 
