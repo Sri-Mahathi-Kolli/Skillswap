@@ -1,8 +1,5 @@
-on:
-
 name: Angular Frontend CI
-
-
+on:
   push:
     branches:
       - main
