@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://your-production-api.com/api',
-  socketUrl: 'https://your-production-api.com',
+  apiUrl: 'https://medhikaa.vercel.app/api',
+  socketUrl: 'https://medhikaa.vercel.app',
   stripePublishableKey: 'pk_live_your_stripe_publishable_key',
   zoomClientId: 'your_zoom_client_id',
   appName: 'SkillSwap',

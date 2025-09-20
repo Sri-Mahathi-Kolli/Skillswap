@@ -24,7 +24,12 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 app.use(cors({ 
-  origin: ['http://localhost:4200', 'http://localhost:4202', 'http://localhost:56239'], 
+  origin: [
+    'http://localhost:4200',
+    'http://localhost:4202',
+    'http://localhost:56239',
+    'https://medhikaa.vercel.app'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
