@@ -1,0 +1,32 @@
+name: Angular Frontend CI
+
+on:
+  push:
+    paths:
+      - 'frontend/'
+  pull_request:
+    paths:
+      - 'frontend/'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install
+      - name: Build Angular app
+        run: npm run build
+      - name: Archive production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-dist
+          path: dist/
