@@ -1,5 +1,15 @@
 {
-  "buildCommand": "npm run build --prefix frontend",
-  "outputDirectory": "frontend/dist",
-  "framework": "angular"
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "frontend/dist/$1"
+    }
+  ]
 }
