@@ -1,13 +1,20 @@
+on:
+
 name: Angular Frontend CI
 
-on:
-  push:
-    paths:
-      - 'frontend/'
-  pull_request:
-    paths:
-      - 'frontend/'
 
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
 jobs:
   build:
     runs-on: ubuntu-latest

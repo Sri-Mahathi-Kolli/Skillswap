@@ -1,13 +1,20 @@
+on:
+
 name: Backend Node.js CI
 
-on:
-  push:
-    paths:
-      - 'backend/'
-  pull_request:
-    paths:
-      - 'backend/'
 
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
 jobs:
   build:
     runs-on: ubuntu-latest
